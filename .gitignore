@@ -1,3 +1,4 @@
 composer.phar
 /vendor/
 src/Infraestrutura/config.ini
+.vscode
