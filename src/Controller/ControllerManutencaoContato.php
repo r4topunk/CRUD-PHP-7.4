@@ -42,18 +42,18 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
         $xIdParam = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
         if ($xIdParam) {
             $oRepositorio = $this->entityManager->getRepository(Contato::class);
-            $xContato = $oRepositorio->find($xIdParam);
-            if ($xContato) {
-                $xId = $xContato->getId();
-                $xTipo = (bool) $xContato->getTipo();
-                $xDescricao = $xContato->getDescricao();
-                $aPessoas[] = $xContato->getPessoa();
+            $oContato = $oRepositorio->find($xIdParam);
+            if ($oContato) {
+                $xId = $oContato->getId();
+                $xTipo = (bool) $oContato->getTipo();
+                $xDescricao = $oContato->getDescricao();
+                $aPessoas[] = $oContato->getPessoa();
             }
         }
 
         list($bIsInclusao, $bReadOnly) = $this->getControlesAcao();
 
-        if ($bIsInclusao) {
+        if (!$bReadOnly) {
             $oRepositorio = $this->entityManager->getRepository(Pessoa::class);
             $aPessoas = $oRepositorio->findAll();
         }

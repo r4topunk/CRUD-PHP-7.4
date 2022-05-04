@@ -30,7 +30,11 @@ include __DIR__ . '/../inicio-html.php';
         <select name="idPessoa" class="form-control" id="exampleFormControlSelect1" data-live-search="true" required <?= !$bReadOnly ?: 'readonly' ?>>
             <?php
             foreach ($aPessoas as $oPessoa) {
-                echo "<option value=\"{$oPessoa->getId()}\">{$oPessoa->getNome()}</option>";
+                if ($oContato && $oContato->getPessoa()->getId() === $oPessoa->getId()) {
+                    echo "<option selected value=\"{$oPessoa->getId()}\">{$oPessoa->getNome()}</option>";
+                } else {
+                    echo "<option value=\"{$oPessoa->getId()}\">{$oPessoa->getNome()}</option>";
+                }
             }
             ?>
         </select>
