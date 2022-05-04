@@ -103,6 +103,8 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
                 }
 
                 $oContato = $this->entityManager->getReference(Contato::class, $iId);
+                $oContato->setPessoa(new Pessoa());
+
                 $this->entityManager->remove($oContato);
                 $this->entityManager->flush();
                 break;
