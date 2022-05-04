@@ -11,7 +11,7 @@ include __DIR__ . '/../inicio-html.php';
     <?php if (!$bIsInclusao) { ?>
         <div class="form-group">
             <label for="idPessoa">ID</label>
-            <input name='id' type="number" class="form-control" id="idPessoa" value="<?= $xId ?>" readonly>
+            <input name='id' type="number" class="form-control" id="id" value="<?= $xId ?>" readonly>
         </div>
     <?php } ?>
 

@@ -1,0 +1,12 @@
+{
+    "require": {
+        "doctrine/orm": "^2.12",
+        "symfony/cache": "^5.4",
+        "doctrine/annotations": "^1.13"
+    },
+    "autoload": {
+        "psr-4": {
+            "Magazord\\": "src/"
+        }
+    }
+}

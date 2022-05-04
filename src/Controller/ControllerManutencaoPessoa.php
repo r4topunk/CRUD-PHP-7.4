@@ -2,23 +2,18 @@
 
 namespace Magazord\Controller;
 
-use Magazord\Dominio\Model\ModelPessoa;
-use Magazord\Infraestrutura\Persistencia\CriadorConexao;
-use Magazord\Dominio\Repositorio\PdoRepositorioPessoa;
-use PDO;
+use Magazord\Entity\Pessoa;
+use Magazord\Helper\EntityManagerFactory;
 
 class ControllerManutencaoPessoa implements InterfaceControllerRequisicao
 {
 
-    private PdoRepositorioPessoa $Persistencia;
+    private $entityManager;
 
     public function __construct()
     {
-        $this->Persistencia = new PdoRepositorioPessoa(CriadorConexao::criarConexao());
-    }
-
-    private function getPersistencia() {
-        return $this->Persistencia;
+        $oEntityManagerFactory = new EntityManagerFactory();
+        $this->entityManager = $oEntityManagerFactory->getEntityManager();
     }
 
     public function processaRequisicao(): void
@@ -44,8 +39,8 @@ class ControllerManutencaoPessoa implements InterfaceControllerRequisicao
         $xId = $xNome = $xCpf = '';
 
         if ($xIdParam) {
-            $oRepPessoa = new PdoRepositorioPessoa(CriadorConexao::criarConexao());
-            $xPessoa = $oRepPessoa->getPessoaById($xIdParam);
+            $oRepositorio = $this->entityManager->getRepository(Pessoa::class);
+            $xPessoa = $oRepositorio->find($xIdParam);
             if ($xPessoa) {
                 $xId = $xPessoa->getId();
                 $xNome = $xPessoa->getNome();
@@ -59,28 +54,41 @@ class ControllerManutencaoPessoa implements InterfaceControllerRequisicao
 
     private function processaDados(): void
     {
-        if (in_array($_GET['acao'], ['incluir', 'alterar'])) {
-            if (empty($_POST['nome']) || empty($_POST['cpf'])) {
+        switch ($_GET['acao']) {
+            case 'incluir':
+                $this->validaParametros(['nome', 'cpf']);
+                $oPessoa = new Pessoa();
+                $oPessoa->setNome(filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_SPECIAL_CHARS));
+                $oPessoa->setCpf(filter_input(INPUT_POST, 'cpf', FILTER_SANITIZE_SPECIAL_CHARS));
+                
+                $this->entityManager->persist($oPessoa);
+                $this->entityManager->flush();
+                break;
+            
+            case 'alterar':
+                $this->validaParametros('id', 'nome', 'cpf');
+                $oRepositorio = $this->entityManager->getRepository(Pessoa::class);
+
+                $iId = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                $oPessoa = $oRepositorio->find(intval($_POST['id']));
+                $oPessoa->setNome(filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_SPECIAL_CHARS));
+                $oPessoa->setCpf(filter_input(INPUT_POST, 'cpf', FILTER_SANITIZE_SPECIAL_CHARS));
+                $this->entityManager->flush();
+                break;
+            case 'deletar':
+                $iId = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+                if (!$iId) {
+                    header('Location: /consulta-pessoas');
+                }
+
+                $oPessoa = $this->entityManager->getReference(Pessoa::class, $iId);
+                $this->entityManager->remove($oPessoa);
+                $this->entityManager->flush();
+                break;
+            default:
                 header('Location: /consulta-pessoas');
-            }
-
-            $xId = empty($_POST['id']) ? null : (int) $_POST['id'];
-    
-            $oPessoa = new ModelPessoa(
-                $xId,
-                filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_SPECIAL_CHARS),
-                filter_input(INPUT_POST, 'cpf', FILTER_SANITIZE_SPECIAL_CHARS)
-            );
-            $this->getPersistencia()->salvar($oPessoa);
-        } else if ($_GET['acao'] === 'deletar') {
-            $oPessoa = new ModelPessoa(
-                intVal($_POST['id']),
-                '',
-                ''
-            );
-            $this->getPersistencia()->deletePessoa($oPessoa);
+                break;
         }
-
         header('Location: /consulta-pessoas');
     }
 
@@ -105,5 +113,14 @@ class ControllerManutencaoPessoa implements InterfaceControllerRequisicao
             $bIsInclusao,
             $bReadOnly
         ];
+    }
+
+    private function validaParametros($aValores): void
+    {
+        foreach ($aValores as $sValor) {
+            if (empty($_POST[$sValor])) {
+                header('Location: /consulta-pessoas');
+            }   
+        }
     }
 }

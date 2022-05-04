@@ -2,19 +2,27 @@
 
 namespace Magazord\Controller;
 
-use Magazord\Infraestrutura\Persistencia\CriadorConexao;
-use Magazord\Dominio\Repositorio\PdoRepositorioPessoa;
+use Magazord\Entity\Pessoa;
+use Magazord\Helper\EntityManagerFactory;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 class ControllerConsultaPessoa implements InterfaceControllerRequisicao
 {
 
+    private $repository;
+
+    public function __construct()
+    {
+        $oEntityManagerFactory = new EntityManagerFactory();
+        $oEntityManager = $oEntityManagerFactory->getEntityManager();
+        $this->repository = $oEntityManager->getRepository(Pessoa::class);
+    }
+
     public function processaRequisicao(): void
     {
         $titulo = 'Pessoas';
-
-        $oRepPessoa = new PdoRepositorioPessoa(CriadorConexao::criarConexao());
-        $aPessoas = $oRepPessoa->buscaPessoas();
-
+        $aPessoas = $this->repository->findAll();
         require __DIR__ . '/../../view/pessoa/ViewConsultaPessoa.php';
     }
 }

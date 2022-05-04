@@ -9,6 +9,7 @@ include __DIR__ . '/../inicio-html.php';
 <script>
     function deletaPessoa($iId) {
         const params = new URLSearchParams();
+        debugger;
         params.append('id', $iId);
         axios.post('/manutencao-pessoa?processo=manutencao&acao=deletar', params);
         document.location.reload(true);
