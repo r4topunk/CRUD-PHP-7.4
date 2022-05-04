@@ -35,11 +35,13 @@ include __DIR__ . '/../inicio-html.php';
             ?>
         </select>
     </div>
-
+    <div class="mt-1">
     <?php if (!$bReadOnly) { ?>
-        <button type="submit" class="btn btn-primary mt-1">Enviar</button>
-        </div>
-    <?php } ?>
+        <button type="submit" class="btn btn-primary">Enviar</button>
+        <?php } ?>
+        <a href="/consulta-contatos"" class=" btn btn-outline-warning">Voltar</a>
+    </div>
+    </div>
 
 </form>
 

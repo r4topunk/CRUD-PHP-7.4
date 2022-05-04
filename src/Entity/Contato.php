@@ -30,7 +30,7 @@ class Contato
     
     /**
      * @ManyToOne(targetEntity="Pessoa")
-     * @JoinColumn(name="pessoaId", referencedColumnName="id")
+     * @JoinColumn(name="pessoaId", referencedColumnName="id", onDelete="CASCADE")
      */
     private Pessoa $Pessoa;
 

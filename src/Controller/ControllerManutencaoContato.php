@@ -2,24 +2,19 @@
 
 namespace Magazord\Controller;
 
-use Magazord\Dominio\Model\ModelContato;
-use Magazord\Dominio\Model\ModelPessoa;
-use Magazord\Infraestrutura\Persistencia\CriadorConexao;
-use Magazord\Dominio\Repositorio\PdoRepositorioContato;
-use Magazord\Dominio\Repositorio\PdoRepositorioPessoa;
+use Magazord\Entity\Contato;
+use Magazord\Entity\Pessoa;
+use Magazord\Helper\EntityManagerFactory;
 
 class ControllerManutencaoContato implements InterfaceControllerRequisicao
 {
 
-    private PdoRepositorioContato $Persistencia;
+    private $entityManager;
 
     public function __construct()
     {
-        $this->Persistencia = new PdoRepositorioContato(CriadorConexao::criarConexao());
-    }
-
-    private function getPersistencia() {
-        return $this->Persistencia;
+        $oEntityManagerFactory = new EntityManagerFactory();
+        $this->entityManager = $oEntityManagerFactory->getEntityManager();
     }
 
     public function processaRequisicao(): void
@@ -46,9 +41,8 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
         
         $xIdParam = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
         if ($xIdParam) {
-            $oRepContato = new PdoRepositorioContato(CriadorConexao::criarConexao());
-            /* @var $xContato ModelContato */
-            $xContato = $oRepContato->getContatoById($xIdParam);
+            $oRepositorio = $this->entityManager->getRepository(Contato::class);
+            $xContato = $oRepositorio->find($xIdParam);
             if ($xContato) {
                 $xId = $xContato->getId();
                 $xTipo = (bool) $xContato->getTipo();
@@ -60,8 +54,8 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
         list($bIsInclusao, $bReadOnly) = $this->getControlesAcao();
 
         if ($bIsInclusao) {
-            $oRepPessoa = new PdoRepositorioPessoa(CriadorConexao::criarConexao());
-            $aPessoas = $oRepPessoa->buscaPessoas();
+            $oRepositorio = $this->entityManager->getRepository(Pessoa::class);
+            $aPessoas = $oRepositorio->findAll();
         }
 
         require __DIR__ . '/../../view/contato/ViewManutencaoContato.php';
@@ -69,28 +63,52 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
 
     private function processaDados(): void
     {
-        if (in_array($_GET['acao'], ['incluir', 'alterar'])) {
-            if (empty($_POST['descricao']) || empty($_POST['idPessoa'])) {
-                header('Location: /consulta-contatos');
-            }
+        switch ($_GET['acao']) {
+            case 'incluir':
+                $this->validaParametros(['descricao', 'idPessoa']);
 
-            $xId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-            $iIdPessoa = (int) $_POST['idPessoa'];
-            $oPessoa = new ModelPessoa($iIdPessoa, '', '');
-    
-            $oContato = new ModelContato(
-                $xId,
-                !empty(filter_input(INPUT_POST, 'tipo')),
-                filter_input(INPUT_POST, 'descricao', FILTER_SANITIZE_SPECIAL_CHARS),
-                $oPessoa
-            );
-            $this->getPersistencia()->salvar($oContato);
-        } else if ($_GET['acao'] === 'deletar') {
-            $xId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-            if ($xId) {
-                $oContato = new ModelContato($xId, '', '', new ModelPessoa(null, '', ''));
-                $this->getPersistencia()->deleteContato($oContato);
-            }
+                $oContato = new Contato();
+                $oContato->setTipo(!empty(filter_input(INPUT_POST, 'tipo')));
+                $oContato->setDescricao(filter_input(INPUT_POST, 'descricao', FILTER_SANITIZE_SPECIAL_CHARS));
+
+                $oRepositorioPessoa = $this->entityManager->getRepository(Pessoa::class);
+                $oPessoa = $oRepositorioPessoa->find(filter_input(INPUT_POST, 'idPessoa', FILTER_VALIDATE_INT));
+
+                $oContato->setPessoa($oPessoa);
+
+                $this->entityManager->persist($oContato);
+                $this->entityManager->flush();
+                break;
+            
+            case 'alterar':
+                $this->validaParametros('id', 'descricao', 'idPessoa');
+                $oRepositorio = $this->entityManager->getRepository(Contato::class);
+
+                $iId = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                $oContato = $oRepositorio->find(intval($_POST['id']));
+                $oContato->setTipo(!empty(filter_input(INPUT_POST, 'tipo')));
+                $oContato->setDescricao(filter_input(INPUT_POST, 'descricao', FILTER_SANITIZE_SPECIAL_CHARS));
+
+                $oRepositorioPessoa = $this->entityManager->getRepository(Pessoa::class);
+                $oPessoa = $oRepositorioPessoa->find(filter_input(INPUT_POST, 'idPessoa', FILTER_VALIDATE_INT));
+
+                $oContato->setPessoa($oPessoa);
+
+                $this->entityManager->flush();
+                break;
+            case 'deletar':
+                $iId = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+                if (!$iId) {
+                    header('Location: /consulta-contatos');
+                }
+
+                $oContato = $this->entityManager->getReference(Contato::class, $iId);
+                $this->entityManager->remove($oContato);
+                $this->entityManager->flush();
+                break;
+            default:
+                header('Location: /consulta-contatos');
+                break;
         }
 
         header('Location: /consulta-contatos');
@@ -117,5 +135,14 @@ class ControllerManutencaoContato implements InterfaceControllerRequisicao
             $bIsInclusao,
             $bReadOnly
         ];
+    }
+
+    private function validaParametros($aValores): void
+    {
+        foreach ($aValores as $sValor) {
+            if (empty($_POST[$sValor])) {
+                header('Location: /consulta-contatos');
+            }   
+        }
     }
 }
