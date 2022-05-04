@@ -29,7 +29,7 @@ class Contato
     private string $descricao;
     
     /**
-     * @ManyToOne(targetEntity="Pessoa")
+     * @ManyToOne(targetEntity="Pessoa", cascade={"remove"})
      * @JoinColumn(name="pessoaId", referencedColumnName="id", onDelete="CASCADE")
      */
     private Pessoa $Pessoa;
